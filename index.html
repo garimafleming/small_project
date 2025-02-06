@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride Booking Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .admin-section {
+            margin-top: 20px;
+        }
+        .ride-entry {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 5px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Book a Ride</h2>
+        <form id="rideForm">
+            <input type="text" id="name" placeholder="Full Name" required><br>
+            <input type="tel" id="phone" placeholder="Phone Number" required><br>
+            <input type="text" id="pickup" placeholder="Pickup Address" required><br>
+            <input type="text" id="dropoff" placeholder="Drop-off Address" required><br>
+            <input type="datetime-local" id="time" required><br>
+            <button type="submit">Submit</button>
+        </form>
+        <p id="status"></p>
+    </div>
+
+    <div class="container admin-section">
+        <h2>Ride Requests</h2>
+        <div id="rideList"></div>
+    </div>
+
+    <script type="module">
+        // Import Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXIavQ_y3lOV0nU9voCknLPWFhilMo0P4",
+            authDomain: "ride-booking-app-81954.firebaseapp.com",
+            databaseURL: "https://ride-booking-app-81954-default-rtdb.firebaseio.com",
+            projectId: "ride-booking-app-81954",
+            storageBucket: "ride-booking-app-81954.appspot.com",
+            messagingSenderId: "21264875069",
+            appId: "1:21264875069:web:561f60cbf6ffc35d43b454"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        document.getElementById('rideForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const rideData = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                pickup: document.getElementById('pickup').value,
+                dropoff: document.getElementById('dropoff').value,
+                time: document.getElementById('time').value,
+            };
+
+            try {
+                await push(ref(db, 'rides'), rideData);
+                document.getElementById('status').innerText = "Ride request submitted!";
+                document.getElementById('rideForm').reset();
+            } catch (error) {
+                console.error("Error adding ride:", error);
+                document.getElementById('status').innerText = "Failed to submit. Try again.";
+            }
+        });
+
+        function loadRides() {
+            const rideList = document.getElementById('rideList');
+            
+            onValue(ref(db, 'rides'), (snapshot) => {
+                rideList.innerHTML = '';
+                snapshot.forEach((childSnapshot) => {
+                    const ride = childSnapshot.val();
+                    const rideKey = childSnapshot.key;
+                    const rideEntry = document.createElement('div');
+                    rideEntry.classList.add('ride-entry');
+                    rideEntry.innerHTML = `
+                        <p><strong>Name:</strong> ${ride.name}</p>
+                        <p><strong>Phone:</strong> ${ride.phone}</p>
+                        <p><strong>Pickup:</strong> ${ride.pickup}</p>
+                        <p><strong>Drop-off:</strong> ${ride.dropoff}</p>
+                        <p><strong>Time:</strong> ${ride.time}</p>
+                        <button onclick="deleteRide('${rideKey}')">Clear Payment</button>
+                    `;
+                    rideList.appendChild(rideEntry);
+                });
+            });
+        }
+
+        window.deleteRide = async function(rideKey) {
+            try {
+                await remove(ref(db, `rides/${rideKey}`));
+            } catch (error) {
+                console.error("Error deleting ride:", error);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', loadRides);
+    </script>    
+</body>
+</html>
